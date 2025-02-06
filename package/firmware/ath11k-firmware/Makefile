@@ -1,48 +1,49 @@
+#
+# Copyright (C) 2022 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ath11k-firmware
-PKG_SOURCE_DATE:=2023-03-31
-PKG_SOURCE_VERSION:=a039049a9349722fa5c74185452ab04644a0d351
-PKG_MIRROR_HASH:=ed401e3f6e91d70565b3396139193f7e815f410db93700697205ac8ed1b828c5
+PKG_SOURCE_DATE:=2023-07-06
+PKG_SOURCE_VERSION:=69f6b7346b64784188dba791a9cfb614eefa441f
+PKG_MIRROR_HASH:=0f0203f755cb6713f6a1f41397dcd0f1a24e5cdbe75258af961343b927ebb3e9
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/quic/upstream-wifi-fw
-PKG_SOURCE_VERSION:=main
-PKG_MIRROR_HASH:=skip
+PKG_SOURCE_URL:=https://github.com/quic/upstream-wifi-fw.git
+
+PKG_LICENSE_FILES:=LICENSE.qca_firmware
+
+PKG_MAINTAINER:=Robert Marko <robimarko@gmail.com>
 
 include $(INCLUDE_DIR)/package.mk
 
-define generate-ath11k-firmware
+RSTRIP:=:
+STRIP:=:
 
-  define Package/$(PKG_NAME)-$(1)
-    SECTION:=firmware
-    CATEGORY:=Firmware
-    TITLE:=ath11k firmware binaries for $(call toupper,$(1))
-  endef
-
-  define Package/$(PKG_NAME)-$(1)/description
-    ath11k firmware binaries for $(call toupper,$(1))
-  endef
-
-  define Package/$(PKG_NAME)-$(1)/install
-	$$(INSTALL_DIR) $$(1)/lib/firmware/$(if $(2),$(2),$(call toupper,$(1)))
-	$$(INSTALL_DATA) \
-		$$(PKG_BUILD_DIR)/ath11k-firmware/*$(call toupper,$(1))*/hw*.0/$(PKG_VERSION)/WLAN.HK.$(PKG_VERSION)-$(PKG_RELEASE)-QCAHKSWPL_SILICONZ-1/$(3)*.* \
-		$$(1)/lib/firmware/$(if $(2),$(2),$(call toupper,$(1)))/
-  endef
-
-  ALL_PACKAGE+=$(PKG_NAME)-$(1)
-
+define Package/ath11k-firmware-default
+  SECTION:=firmware
+  CATEGORY:=Firmware
+  URL:=$(PKG_SOURCE_URL)
+  DEPENDS:=
 endef
 
-$(eval $(call generate-ath11k-firmware,ipq5018))
-$(eval $(call generate-ath11k-firmware,ipq6018))
-$(eval $(call generate-ath11k-firmware,ipq8074))
-$(eval $(call generate-ath11k-firmware,qcn6122,qcn6122,qcn6122/))
-$(eval $(call generate-ath11k-firmware,qcn9074,qcn9074))
+define Package/ath11k-firmware-ipq8074
+$(Package/ath11k-firmware-default)
+  TITLE:=IPQ8074 ath11k firmware
+endef
+
+define Package/ath11k-firmware-qcn9074
+$(Package/ath11k-firmware-default)
+  TITLE:=QCN9074 ath11k firmware
+endef
 
 define Build/Compile
+
 endef
 
 QCN9074_BOARD_REV:=8e140c65f36137714b6d8934e09dcd73cb05c2f6

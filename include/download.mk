@@ -19,7 +19,11 @@ endif
 DOWNLOAD_RDEP=$(STAMP_PREPARED) $(HOST_STAMP_PREPARED)
 
 define dl_method_git
-$(if $(filter https://github.com/% git://github.com/%,$(1)),github_archive,git)
+$(if $(filter https://github.com/% git://github.com/%,$(1)),github_archive, \
+  $(if $(filter https://git.codelinaro.org/% git://git.codelinaro.org/%,$(1)),codelinaro_archive, \
+    git \
+  ) \
+)
 endef
 
 # Try to guess the download method from the URL
@@ -48,7 +52,7 @@ endef
 # code for creating tarballs from cvs/svn/git/bzr/hg/darcs checkouts - useful for mirror support
 dl_pack/bz2=bzip2 -c > $(1)
 dl_pack/gz=gzip -nc > $(1)
-dl_pack/xz=xz -zc -7e > $(1)
+dl_pack/xz=xz -T0 -zc -7e > $(1)
 dl_pack/zst=zstd -T0 --ultra -20 -c > $(1)
 dl_pack/unknown=$(error ERROR: Unknown pack format for file $(1))
 define dl_pack
@@ -193,6 +197,25 @@ define DownloadMethod/github_archive
 			--source="$(FILE)" \
 			--hash="$(MIRROR_HASH)" \
 		|| ( $(call DownloadMethod/rawgit) ); \
+	)
+endef
+
+define DownloadMethod/codelinaro_archive
+	$(call wrap_mirror,$(1),$(2), \
+		( \
+			echo "Downloading source code from codelinaro..."; \
+			mkdir -p $(TMP_DIR)/dl && \
+			cd $(TMP_DIR)/dl && \
+			rm -rf $(SUBDIR) && \
+			mkdir $(SUBDIR) && \
+			curl "$(patsubst git://%,https://%,$(URL:%.git=%))/-/archive/$(VERSION)/archive.tar.gz" \
+				| $(TAR) -C $(SUBDIR) --strip-components 1 -xzf - && \
+			echo "Repacking..." && \
+			export TAR_TIMESTAMP="$$(curl "$(patsubst git://%,https://%,$(URL:%.git=%))/-/commit/$(VERSION)" | grep -oE 'datetime="[^"]*"' | cut -d'"' -f2)" && \
+			$(call dl_tar_pack,$(TMP_DIR)/dl/$(FILE),$(SUBDIR)) && \
+			mv $(TMP_DIR)/dl/$(FILE) $(DL_DIR)/ && \
+			rm -rf $(SUBDIR); \
+		) || ( $(call DownloadMethod/rawgit) ); \
 	)
 endef
 
